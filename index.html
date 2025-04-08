@@ -178,9 +178,17 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="cbu">CBU*</label>
-                    <input type="text" id="cbu" name="cbu" required>
-                    <div class="error" id="cbu-error">Ingrese un CBU válido (22 dígitos)</div>
+                    <label for="tipo-cuenta">Tipo de Cuenta*</label>
+                    <select id="tipo-cuenta" name="tipo-cuenta" required>
+                        <option value="cbu">CBU (22 dígitos)</option>
+                        <option value="alias">Alias</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cbu-alias">CBU o Alias*</label>
+                    <input type="text" id="cbu-alias" name="cbu-alias" required>
+                    <div class="error" id="cbu-error">Ingrese un CBU válido (22 dígitos) o un Alias</div>
                 </div>
                 
                 <div class="form-group">
@@ -253,7 +261,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // URL del script de Google Apps Script (debes reemplazar esto con tu URL real)
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_XPHCf_wtkYcPhsZGqFWkfqtKLiSVisnpvXyoPIGeuf1hFGTASi2OyzJSlCW07NbZ-w/exec';
+            const SCRIPT_URL = 'TU_URL_DE_APPS_SCRIPT_WEB_APP_AQUÍ';
             
             // Elementos de navegación
             const section1 = document.getElementById('section1');
@@ -276,6 +284,19 @@
             
             const formSuccess = document.getElementById('formSuccess');
             const form = document.getElementById('premioForm');
+            
+            // Control para CBU o Alias
+            const tipoCuenta = document.getElementById('tipo-cuenta');
+            const cbuAlias = document.getElementById('cbu-alias');
+            const cbuError = document.getElementById('cbu-error');
+            
+            tipoCuenta.addEventListener('change', function() {
+                if (tipoCuenta.value === 'cbu') {
+                    cbuError.textContent = 'Ingrese un CBU válido (22 dígitos)';
+                } else {
+                    cbuError.textContent = 'Ingrese un Alias válido';
+                }
+            });
             
             // Navegación entre secciones
             nextToSection2.addEventListener('click', function() {
@@ -366,14 +387,22 @@
                     localidadError.style.display = 'none';
                 }
                 
-                // Validar CBU
-                const cbu = document.getElementById('cbu');
-                const cbuError = document.getElementById('cbu-error');
-                if (!cbu.value.trim() || isNaN(cbu.value) || cbu.value.length !== 22) {
-                    cbuError.style.display = 'block';
-                    valido = false;
+                // Validar CBU o Alias según el tipo seleccionado
+                if (tipoCuenta.value === 'cbu') {
+                    if (!cbuAlias.value.trim() || isNaN(cbuAlias.value) || cbuAlias.value.length !== 22) {
+                        cbuError.style.display = 'block';
+                        valido = false;
+                    } else {
+                        cbuError.style.display = 'none';
+                    }
                 } else {
-                    cbuError.style.display = 'none';
+                    // Para alias, solo verificamos que no esté vacío
+                    if (!cbuAlias.value.trim() || cbuAlias.value.length < 3) {
+                        cbuError.style.display = 'block';
+                        valido = false;
+                    } else {
+                        cbuError.style.display = 'none';
+                    }
                 }
                 
                 return valido;
@@ -427,7 +456,8 @@
                     cuit: document.getElementById('cuit').value,
                     telefono: document.getElementById('telefono').value,
                     localidad: document.getElementById('localidad').value,
-                    cbu: document.getElementById('cbu').value,
+                    tipoCuenta: document.getElementById('tipo-cuenta').value,
+                    cbuAlias: document.getElementById('cbu-alias').value,
                     agencia: document.getElementById('agencia').value,
                     numeroCupon: document.getElementById('numeroCupon').value
                 };
@@ -478,12 +508,11 @@
                     cuponError.style.display = 'none';
                 }
                 
-                // En un entorno real, aquí consultaríamos la API
-                // Por ahora, usaremos datos de prueba
-                verificarCupon();
+                // Verificar el cupón directamente en Google Sheets
+                verificarCuponEnSheets();
             });
             
-            function verificarCupon() {
+            async function verificarCuponEnSheets() {
                 // Mostrar indicador de carga
                 verificando.style.display = 'block';
                 cuponInvalido.style.display = 'none';
@@ -491,24 +520,36 @@
                 seccionFoto.style.display = 'none';
                 nextToSection3.style.display = 'none';
                 
-                // En producción, esta verificación se haría contra el script de Google Apps
-                // Por ahora, simulamos con una lista local de cupones válidos
-                const cuponesConPremio = ['1234567', '7654321', '1111111', '2222222'];
-                
-                setTimeout(function() {
+                try {
+                    // Consultar la API para verificar el cupón
+                    const response = await fetch(`${SCRIPT_URL}?action=verificarCupon&numeroCupon=${numeroCupon.value}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
                     verificando.style.display = 'none';
                     
-                    // Comprobar si el cupón tiene premio
-                    if (cuponesConPremio.includes(numeroCupon.value)) {
+                    if (data.success && data.valido) {
+                        // El cupón es válido según Google Sheets
                         cuponValido.style.display = 'block';
                         seccionFoto.style.display = 'block';
                         nextToSection3.style.display = 'block';
                     } else {
+                        // El cupón no es válido
                         cuponInvalido.style.display = 'block';
                         seccionFoto.style.display = 'none';
                         nextToSection3.style.display = 'none';
                     }
-                }, 1500);
+                } catch (error) {
+                    console.error('Error al verificar el cupón:', error);
+                    verificando.style.display = 'none';
+                    cuponInvalido.style.display = 'block';
+                    alert('Ocurrió un error al verificar el cupón. Por favor, inténtelo nuevamente.');
+                }
             }
             
             // Vista previa de la imagen
