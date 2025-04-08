@@ -125,6 +125,14 @@
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+        #debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            display: none;
+        }
         @media screen and (max-width: 600px) {
             .container {
                 padding: 15px;
@@ -209,6 +217,8 @@
                     <div class="error" id="cupon-error">Este campo es obligatorio</div>
                 </div>
                 
+                <button type="button" id="verificarCuponBtn">Verificar Cupón</button>
+                
                 <div class="loading" id="verificando">
                     <p>Verificando el cupón...</p>
                 </div>
@@ -220,6 +230,11 @@
                 <div class="message success" id="cuponValido">
                     <p>¡Felicitaciones! Su cupón tiene un premio pendiente de cobro.</p>
                     <p>Continúe para completar el proceso.</p>
+                </div>
+                
+                <div id="debug-info">
+                    <h4>Información de depuración:</h4>
+                    <pre id="debug-response"></pre>
                 </div>
                 
                 <div class="form-group" id="seccionFoto">
@@ -261,7 +276,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // URL del script de Google Apps Script (debes reemplazar esto con tu URL real)
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_XPHCf_wtkYcPhsZGqFWkfqtKLiSVisnpvXyoPIGeuf1hFGTASi2OyzJSlCW07NbZ-w/exec';
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbya8eoBdPystk0EIkx_Ua3pBSOgnBqKLkpoC9zFSUlacOynugnmUZf26KF53QnjdkTrtA/exec';
+            
+            // Para modo de desarrollo y pruebas (elimina esta línea en producción)
+            const MODO_DESARROLLO = true;
             
             // Elementos de navegación
             const section1 = document.getElementById('section1');
@@ -277,10 +295,13 @@
             const nextToSection3 = document.getElementById('nextToSection3');
             const backToSection2 = document.getElementById('backToSection2');
             
+            const verificarCuponBtn = document.getElementById('verificarCuponBtn');
             const verificando = document.getElementById('verificando');
             const cuponInvalido = document.getElementById('cuponInvalido');
             const cuponValido = document.getElementById('cuponValido');
             const seccionFoto = document.getElementById('seccionFoto');
+            const debugInfo = document.getElementById('debug-info');
+            const debugResponse = document.getElementById('debug-response');
             
             const formSuccess = document.getElementById('formSuccess');
             const form = document.getElementById('premioForm');
@@ -495,10 +516,9 @@
                 }
             }
             
-            // Verificación del cupón contra Google Sheets
-            const numeroCupon = document.getElementById('numeroCupon');
-            
-            numeroCupon.addEventListener('blur', function() {
+            // Verificación del cupón con botón explícito
+            verificarCuponBtn.addEventListener('click', function() {
+                const numeroCupon = document.getElementById('numeroCupon');
                 const cuponError = document.getElementById('cupon-error');
                 
                 if (!numeroCupon.value.trim()) {
@@ -508,7 +528,6 @@
                     cuponError.style.display = 'none';
                 }
                 
-                // Verificar el cupón directamente en Google Sheets
                 verificarCuponEnSheets();
             });
             
@@ -519,19 +538,47 @@
                 cuponValido.style.display = 'none';
                 seccionFoto.style.display = 'none';
                 nextToSection3.style.display = 'none';
+                debugInfo.style.display = 'none';
+                
+                const numeroCupon = document.getElementById('numeroCupon').value;
                 
                 try {
-                    // Consultar la API para verificar el cupón
-                    const response = await fetch(`${SCRIPT_URL}?action=verificarCupon&numeroCupon=${numeroCupon.value}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
+                    // En modo desarrollo o si tenemos problemas de conexión, 
+                    // verificamos contra la lista local primero
+                    if (MODO_DESARROLLO) {
+                        const cuponesConPremio = ['1234567', '7654321', '1111111', '2222222'];
+                        
+                        setTimeout(function() {
+                            verificando.style.display = 'none';
+                            
+                            if (cuponesConPremio.includes(numeroCupon)) {
+                                cuponValido.style.display = 'block';
+                                seccionFoto.style.display = 'block';
+                                nextToSection3.style.display = 'block';
+                                debugInfo.style.display = 'block';
+                                debugResponse.textContent = 'Modo desarrollo: Cupón verificado localmente como válido';
+                            } else {
+                                cuponInvalido.style.display = 'block';
+                                debugInfo.style.display = 'block';
+                                debugResponse.textContent = 'Modo desarrollo: Cupón verificado localmente como inválido';
+                            }
+                        }, 1000);
+                        
+                        return;
+                    }
                     
+                    // Para producción: Consultar la API para verificar el cupón
+                    const url = `${SCRIPT_URL}?action=verificarCupon&numeroCupon=${encodeURIComponent(numeroCupon)}`;
+                    console.log("Verificando cupón en: ", url);
+                    
+                    const response = await fetch(url);
                     const data = await response.json();
                     
                     verificando.style.display = 'none';
+                    
+                    // En modo de depuración, mostrar la respuesta completa
+                    debugInfo.style.display = 'block';
+                    debugResponse.textContent = JSON.stringify(data, null, 2);
                     
                     if (data.success && data.valido) {
                         // El cupón es válido según Google Sheets
@@ -548,6 +595,8 @@
                     console.error('Error al verificar el cupón:', error);
                     verificando.style.display = 'none';
                     cuponInvalido.style.display = 'block';
+                    debugInfo.style.display = 'block';
+                    debugResponse.textContent = 'Error: ' + error.toString();
                     alert('Ocurrió un error al verificar el cupón. Por favor, inténtelo nuevamente.');
                 }
             }
