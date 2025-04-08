@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cobro de Premios de Quiniela</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0066cc;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        input[type="file"] {
+            border: none;
+            padding: 10px 0;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 4px;
+            display: block;
+            margin: 30px auto 0;
+        }
+        button:hover {
+            background-color: #0055aa;
+        }
+        .message {
+            text-align: center;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .fail {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .loading {
+            text-align: center;
+            display: none;
+        }
+        .steps {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            color: #999;
+        }
+        .step.active {
+            color: #0066cc;
+            font-weight: bold;
+        }
+        .form-section {
+            display: none;
+        }
+        .form-section.active {
+            display: block;
+        }
+        .preview-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .preview-container img {
+            max-width: 100%;
+            max-height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        @media screen and (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cobro de Premios de Quiniela</h1>
+        
+        <div class="steps">
+            <div class="step active" id="step1-indicator">1. Datos Personales</div>
+            <div class="step" id="step2-indicator">2. Datos del Cupón</div>
+            <div class="step" id="step3-indicator">3. Confirmación</div>
+        </div>
+        
+        <form id="premioForm">
+            <!-- Sección 1: Datos Personales -->
+            <div class="form-section active" id="section1">
+                <h2>Datos Personales</h2>
+                
+                <div class="form-group">
+                    <label for="nombre">Nombre*</label>
+                    <input type="text" id="nombre" name="nombre" required>
+                    <div class="error" id="nombre-error">Este campo es obligatorio</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="apellido">Apellido*</label>
+                    <input type="text" id="apellido" name="apellido" required>
+                    <div class="error" id="apellido-error">Este campo es obligatorio</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cuit">CUIT*</label>
+                    <input type="text" id="cuit" name="cuit" required>
+                    <div class="error" id="cuit-error">Ingrese un CUIT válido (formato XX-XXXXXXXX-X)</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="telefono">Teléfono*</label>
+                    <input type="tel" id="telefono" name="telefono" required>
+                    <div class="error" id="telefono-error">Ingrese un teléfono válido</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="localidad">Localidad*</label>
+                    <input type="text" id="localidad" name="localidad" required>
+                    <div class="error" id="localidad-error">Este campo es obligatorio</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cbu">CBU*</label>
+                    <input type="text" id="cbu" name="cbu" required>
+                    <div class="error" id="cbu-error">Ingrese un CBU válido (22 dígitos)</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="agencia">Número de Agencia (si corresponde)</label>
+                    <input type="text" id="agencia" name="agencia">
+                </div>
+                
+                <button type="button" id="nextToSection2">Continuar</button>
+            </div>
+            
+            <!-- Sección 2: Datos del Cupón -->
+            <div class="form-section" id="section2">
+                <h2>Datos del Cupón</h2>
+                
+                <div class="form-group">
+                    <label for="numeroCupon">Número de Cupón*</label>
+                    <input type="text" id="numeroCupon" name="numeroCupon" required>
+                    <div class="error" id="cupon-error">Este campo es obligatorio</div>
+                </div>
+                
+                <div class="loading" id="verificando">
+                    <p>Verificando el cupón...</p>
+                </div>
+                
+                <div class="message fail" id="cuponInvalido">
+                    <p>El número de cupón ingresado no tiene premio asociado.</p>
+                </div>
+                
+                <div class="message success" id="cuponValido">
+                    <p>¡Felicitaciones! Su cupón tiene un premio pendiente de cobro.</p>
+                    <p>Continúe para completar el proceso.</p>
+                </div>
+                
+                <div class="form-group" id="seccionFoto">
+                    <label for="fotoCupon">Foto del Cupón*</label>
+                    <input type="file" id="fotoCupon" name="fotoCupon" accept="image/*" required>
+                    <div class="error" id="foto-error">Debe cargar una foto del cupón</div>
+                    <div class="preview-container">
+                        <img id="previewFoto" src="" alt="Vista previa" style="display: none;">
+                    </div>
+                </div>
+                
+                <button type="button" id="backToSection1">Volver</button>
+                <button type="button" id="nextToSection3">Continuar</button>
+            </div>
+            
+            <!-- Sección 3: Confirmación -->
+            <div class="form-section" id="section3">
+                <h2>Confirmación</h2>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="declaracionJurada" name="declaracionJurada" required>
+                        <label for="declaracionJurada">Declaro que todos los datos proporcionados son verdaderos y correctos, y que esta información constituye una declaración jurada.*</label>
+                    </div>
+                    <div class="error" id="declaracion-error">Debe aceptar la declaración jurada</div>
+                </div>
+                
+                <button type="button" id="backToSection2">Volver</button>
+                <button type="submit" id="submitBtn">Enviar Solicitud</button>
+            </div>
+        </form>
+        
+        <div class="message success" id="formSuccess">
+            <p>¡Su solicitud ha sido enviada con éxito!</p>
+            <p>Nos comunicaremos con usted a la brevedad para finalizar el proceso de cobro.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Base de datos de cupones (simulada)
+            const cuponesConPremio = ['1234567', '7654321', '1111111', '2222222'];
+            
+            // Elementos de navegación
+            const section1 = document.getElementById('section1');
+            const section2 = document.getElementById('section2');
+            const section3 = document.getElementById('section3');
+            
+            const step1Indicator = document.getElementById('step1-indicator');
+            const step2Indicator = document.getElementById('step2-indicator');
+            const step3Indicator = document.getElementById('step3-indicator');
+            
+            const nextToSection2 = document.getElementById('nextToSection2');
+            const backToSection1 = document.getElementById('backToSection1');
+            const nextToSection3 = document.getElementById('nextToSection3');
+            const backToSection2 = document.getElementById('backToSection2');
+            
+            const verificando = document.getElementById('verificando');
+            const cuponInvalido = document.getElementById('cuponInvalido');
+            const cuponValido = document.getElementById('cuponValido');
+            const seccionFoto = document.getElementById('seccionFoto');
+            
+            const formSuccess = document.getElementById('formSuccess');
+            const form = document.getElementById('premioForm');
+            
+            // Navegación entre secciones
+            nextToSection2.addEventListener('click', function() {
+                if (validarSeccion1()) {
+                    section1.classList.remove('active');
+                    section2.classList.add('active');
+                    step1Indicator.classList.remove('active');
+                    step2Indicator.classList.add('active');
+                }
+            });
+            
+            backToSection1.addEventListener('click', function() {
+                section2.classList.remove('active');
+                section1.classList.add('active');
+                step2Indicator.classList.remove('active');
+                step1Indicator.classList.add('active');
+            });
+            
+            nextToSection3.addEventListener('click', function() {
+                if (validarSeccion2()) {
+                    section2.classList.remove('active');
+                    section3.classList.add('active');
+                    step2Indicator.classList.remove('active');
+                    step3Indicator.classList.add('active');
+                }
+            });
+            
+            backToSection2.addEventListener('click', function() {
+                section3.classList.remove('active');
+                section2.classList.add('active');
+                step3Indicator.classList.remove('active');
+                step2Indicator.classList.add('active');
+            });
+            
+            // Validación de secciones
+            function validarSeccion1() {
+                let valido = true;
+                
+                // Validar nombre
+                const nombre = document.getElementById('nombre');
+                const nombreError = document.getElementById('nombre-error');
+                if (!nombre.value.trim()) {
+                    nombreError.style.display = 'block';
+                    valido = false;
+                } else {
+                    nombreError.style.display = 'none';
+                }
+                
+                // Validar apellido
+                const apellido = document.getElementById('apellido');
+                const apellidoError = document.getElementById('apellido-error');
+                if (!apellido.value.trim()) {
+                    apellidoError.style.display = 'block';
+                    valido = false;
+                } else {
+                    apellidoError.style.display = 'none';
+                }
+                
+                // Validar CUIT
+                const cuit = document.getElementById('cuit');
+                const cuitError = document.getElementById('cuit-error');
+                // Validación básica de CUIT (formato XX-XXXXXXXX-X o sin guiones)
+                const cuitRegex = /^(\d{2})-?(\d{8})-?(\d{1})$/;
+                if (!cuit.value.trim() || !cuitRegex.test(cuit.value)) {
+                    cuitError.style.display = 'block';
+                    valido = false;
+                } else {
+                    cuitError.style.display = 'none';
+                }
+                
+                // Validar teléfono
+                const telefono = document.getElementById('telefono');
+                const telefonoError = document.getElementById('telefono-error');
+                if (!telefono.value.trim() || telefono.value.length < 8) {
+                    telefonoError.style.display = 'block';
+                    valido = false;
+                } else {
+                    telefonoError.style.display = 'none';
+                }
+                
+                // Validar localidad
+                const localidad = document.getElementById('localidad');
+                const localidadError = document.getElementById('localidad-error');
+                if (!localidad.value.trim()) {
+                    localidadError.style.display = 'block';
+                    valido = false;
+                } else {
+                    localidadError.style.display = 'none';
+                }
+                
+                // Validar CBU
+                const cbu = document.getElementById('cbu');
+                const cbuError = document.getElementById('cbu-error');
+                if (!cbu.value.trim() || isNaN(cbu.value) || cbu.value.length !== 22) {
+                    cbuError.style.display = 'block';
+                    valido = false;
+                } else {
+                    cbuError.style.display = 'none';
+                }
+                
+                return valido;
+            }
+            
+            function validarSeccion2() {
+                let valido = true;
+                
+                // Validar foto del cupón
+                const fotoCupon = document.getElementById('fotoCupon');
+                const fotoError = document.getElementById('foto-error');
+                if (!fotoCupon.files || fotoCupon.files.length === 0) {
+                    fotoError.style.display = 'block';
+                    valido = false;
+                } else {
+                    fotoError.style.display = 'none';
+                }
+                
+                return valido;
+            }
+            
+            // Validación y envío del formulario
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const declaracionJurada = document.getElementById('declaracionJurada');
+                const declaracionError = document.getElementById('declaracion-error');
+                
+                if (!declaracionJurada.checked) {
+                    declaracionError.style.display = 'block';
+                    return;
+                } else {
+                    declaracionError.style.display = 'none';
+                }
+                
+                // Simulación de envío de datos
+                enviarDatos();
+            });
+            
+            function enviarDatos() {
+                // Aquí se implementaría la lógica de envío de datos al servidor
+                // Simulamos una respuesta exitosa después de 2 segundos
+                
+                document.getElementById('submitBtn').disabled = true;
+                document.getElementById('submitBtn').textContent = 'Enviando...';
+                
+                // Recopilar datos del formulario para el correo
+                const formData = {
+                    nombre: document.getElementById('nombre').value,
+                    apellido: document.getElementById('apellido').value,
+                    cuit: document.getElementById('cuit').value,
+                    telefono: document.getElementById('telefono').value,
+                    localidad: document.getElementById('localidad').value,
+                    cbu: document.getElementById('cbu').value,
+                    agencia: document.getElementById('agencia').value,
+                    numeroCupon: document.getElementById('numeroCupon').value
+                };
+                
+                // En un caso real, aquí se enviaría el correo de notificación al empleado
+                // Por ejemplo, usando la API de EmailJS o un servicio de backend
+                
+                // Simulamos el envío del correo
+                console.log("Enviando correo a afolco@loteriadesalta.com con los siguientes datos:");
+                console.log(formData);
+                
+                // En una implementación real, se usaría algo como:
+                /*
+                fetch('https://su-servidor.com/api/enviar-correo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        to: 'afolco@loteriadesalta.com',
+                        subject: 'Nueva solicitud de cobro de premio',
+                        datos: formData
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Correo enviado con éxito');
+                    form.style.display = 'none';
+                    formSuccess.style.display = 'block';
+                })
+                .catch((error) => {
+                    console.error('Error al enviar correo:', error);
+                    alert('Hubo un error al procesar su solicitud. Por favor, inténtelo nuevamente.');
+                    document.getElementById('submitBtn').disabled = false;
+                    document.getElementById('submitBtn').textContent = 'Enviar Solicitud';
+                });
+                */
+                
+                // Por ahora, solo simulamos el éxito después de 2 segundos
+                setTimeout(function() {
+                    form.style.display = 'none';
+                    formSuccess.style.display = 'block';
+                }, 2000);
+            }
+            
+            // Verificación del cupón
+            const numeroCupon = document.getElementById('numeroCupon');
+            
+            numeroCupon.addEventListener('blur', function() {
+                const cuponError = document.getElementById('cupon-error');
+                
+                if (!numeroCupon.value.trim()) {
+                    cuponError.style.display = 'block';
+                    return;
+                } else {
+                    cuponError.style.display = 'none';
+                }
+                
+                // Simulación de verificación del cupón
+                verificarCupon();
+            });
+            
+            function verificarCupon() {
+                // Mostrar indicador de carga
+                verificando.style.display = 'block';
+                cuponInvalido.style.display = 'none';
+                cuponValido.style.display = 'none';
+                seccionFoto.style.display = 'none';
+                nextToSection3.style.display = 'none';
+                
+                // Simulación de tiempo de espera para la verificación
+                setTimeout(function() {
+                    verificando.style.display = 'none';
+                    
+                    // Comprobar si el cupón tiene premio
+                    if (cuponesConPremio.includes(numeroCupon.value)) {
+                        cuponValido.style.display = 'block';
+                        seccionFoto.style.display = 'block';
+                        nextToSection3.style.display = 'block';
+                    } else {
+                        cuponInvalido.style.display = 'block';
+                        seccionFoto.style.display = 'none';
+                        nextToSection3.style.display = 'none';
+                    }
+                }, 1500);
+            }
+            
+            // Vista previa de la imagen
+            const fotoCupon = document.getElementById('fotoCupon');
+            const previewFoto = document.getElementById('previewFoto');
+            
+            fotoCupon.addEventListener('change', function() {
+                if (fotoCupon.files && fotoCupon.files[0]) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        previewFoto.src = e.target.result;
+                        previewFoto.style.display = 'block';
+                    }
+                    
+                    reader.readAsDataURL(fotoCupon.files[0]);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
